@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    # branches:
+    #   - master
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby:
+          - 2.5
+          - 2.6
+          - 2.7
+          - 3.0
+          - ruby-head
+          - jruby
+        gemfile:
+          - gemfiles/ar52.gemfile
+          - gemfiles/ar60.gemfile
+          - gemfiles/ar61.gemfile
+          - gemfiles/ar-head.gemfile
+    services:
+      postgres:
+        image: postgres:10
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: amountable_test
+        options: >-
+           --health-cmd pg_isready
+           --health-interval 10s
+           --health-timeout 5s
+           --health-retries 5
+      # mysql:
+        
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ruby/setup-ruby@v1
+         with:
+           ruby-version: ${{ matrix.ruby }}
+           bundler-cache: true
+      - run: |
+           bundle exec rake
+         env:
+           PGHOST: 127.0.0.1
+           PGUSER: postgres
+           RAILS_ENV: test
